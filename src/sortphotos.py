@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# encoding: utf-8
+# -*- coding: utf-8 -*-
 """
 sortphotos.py
 
@@ -13,6 +13,8 @@ from __future__ import with_statement
 import subprocess
 import os
 import sys
+reload(sys);
+sys.setdefaultencoding("utf8")
 import shutil
 try:
     import json
@@ -27,6 +29,9 @@ exiftool_location = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'I
 
 
 # -------- convenience methods -------------
+
+def is_zero_file(fpath):
+    return False if os.path.isfile(fpath) and os.path.getsize(fpath) > 0 else True
 
 def parse_date_exif(date_string):
     """
@@ -209,7 +214,7 @@ class ExifTool(object):
         try:
             return json.loads(self.execute(*args))
         except ValueError:
-            sys.stdout.write('No files to parse or invalid data\n')
+            sys.stdout.write('[ERROR] No files to parse or invalid data\n')
             exit()
 
 
@@ -326,14 +331,20 @@ def sortPhotos(src_dir, dest_dir, sort_format, rename_format, recursive=False,
         # check if no valid date found
         if not date:
             if verbose:
-                print('No valid dates were found using the specified tags.  File will remain where it is.')
+                print('[ERROR] No valid dates were found using the specified tags.  File will remain where it is.')
                 print()
                 # sys.stdout.flush()
             continue
 
         # ignore hidden files
         if os.path.basename(src_file).startswith('.'):
-            print('hidden file.  will be skipped')
+            print('[ERROR] hidden file.  will be skipped')
+            print()
+            continue
+
+        # ignore empty/zero file
+        if is_zero_file(src_file):
+            print('[ERROR] is empty/zero file.  will be skipped')
             print()
             continue
 
@@ -390,17 +401,17 @@ def sortPhotos(src_dir, dest_dir, sort_format, rename_format, recursive=False,
                     fileIsIdentical = True
                     if verbose:
                         if copy_files:
-                            print('Identical file already exists.  Duplicate will be ignored.\n')
+                            print('[WARN] Identical file already exists.  Duplicate will be ignored.\n')
                             # sys.stdout.flush()
                         else:
-                            print('Identical file already exists.  Duplicate will be overwritten.')
+                            print('[WARN] Identical file already exists.  Duplicate will be overwritten.')
                     break
 
                 else:  # name is same, but file is different
                     dest_file = root + '_' + str(append) + ext
                     append += 1
                     if verbose:
-                        print('Same name already exists...renaming to: ' + dest_file)
+                        print('[WARN] Same name already exists...renaming to: ' + dest_file)
 
             else:
                 break
